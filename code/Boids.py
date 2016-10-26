@@ -23,17 +23,20 @@ b_length = 0.1
 r_avoid = 0.3
 r_center = 1.0
 r_copy = 0.5
+r_sight = 5.0
 
 # viewing angle for different rules, in radians
 a_avoid = 2*np.pi
 a_center = 2
 a_copy = 2
+a_sight = 0.1
 
 # weights for various rules
 w_avoid = 4
 w_center = 3
 w_copy = 2
 w_love = 10
+w_sight = 5
 
 # time step
 dt = 0.1
@@ -51,6 +54,7 @@ def limit_vector(vect):
         vect.mag = 1
     return vect
 
+right_or_left = [np.pi, -np.pi]
 
 null_vector = visual.vector(0,0,0)
 
@@ -131,12 +135,24 @@ class Boid(visual.cone):
         toward = carrot.pos - self.pos
         return limit_vector(toward)
 
+    def sight(self, others):
+        """Returns a vector pointing laterally if there is a boid directly in sight"""
+        line = self.get_neighbors(others, r_sight, a_sight)
+        if line:
+            curr_vel = self.vel
+            toward = visual.rotate(curr_vel, np.random.choice(right_or_left), (1,0,0))
+            return limit_vector(toward)
+        else:
+            return null_vector
+
+
     def set_goal(self, boids, carrot):
         """Sets the goal to be the weighted sum of the goal vectors."""
         self.goal = (w_avoid * self.avoid(boids, carrot) + 
                      w_center * self.center(boids) +
                      w_copy * self.copy(boids) + 
-                     w_love * self.love(carrot))
+                     w_love * self.love(carrot)+
+                     w_sight * self.sight(boids))
         self.goal.mag = 1
         
     def move(self, mu=0.1):
